@@ -24,7 +24,7 @@ def register(user: UserRegister):
         "name": user.name,
         "email": user.email,
         "password": hashed_password,
-        "role": user.role
+        "role": "huesped"  
     }
 
     users_collection.insert_one(user_dict)
