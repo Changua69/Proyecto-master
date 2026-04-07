@@ -8,7 +8,7 @@ from bson import ObjectId
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 
 
-# 🔥 CREAR RESERVA (con validación de fechas)
+# CREAR RESERVA (con validación de fechas)
 @router.post("/create")
 def crear_reserva(reservation: ReservationCreate, user=Depends(get_current_user)):
 
@@ -16,7 +16,7 @@ def crear_reserva(reservation: ReservationCreate, user=Depends(get_current_user)
     if reservation.check_out <= reservation.check_in:
         raise HTTPException(status_code=400, detail="Fechas inválidas")
 
-    # 🔥 Convertir fechas (ANTES de usarlas)
+    # Convertir fechas (ANTES de usarlas)
     check_in_dt = datetime.combine(reservation.check_in, datetime.min.time())
     check_out_dt = datetime.combine(reservation.check_out, datetime.min.time())
 
@@ -25,7 +25,7 @@ def crear_reserva(reservation: ReservationCreate, user=Depends(get_current_user)
     if not room:
         raise HTTPException(status_code=404, detail="Habitación no existe")
 
-    # 🔥 Validar disponibilidad por fechas
+    # Validar disponibilidad por fechas
     existing_reservation = reservations_collection.find_one({
         "room_number": reservation.room_number,
         "check_out": {"$gt": check_in_dt},
@@ -50,7 +50,7 @@ def crear_reserva(reservation: ReservationCreate, user=Depends(get_current_user)
     return {"message": "Reserva creada"}
 
 
-# 📄 LISTAR RESERVAS
+# LISTAR RESERVAS
 @router.get("/")
 def listar_reservas(user=Depends(get_current_user)):
 
@@ -62,7 +62,7 @@ def listar_reservas(user=Depends(get_current_user)):
     return reservas
 
 
-# ❌ CANCELAR RESERVA
+# CANCELAR RESERVA
 @router.delete("/{id}")
 def cancelar_reserva(id: str, user=Depends(get_current_user)):
 
@@ -82,7 +82,7 @@ def cancelar_reserva(id: str, user=Depends(get_current_user)):
     return {"message": "Reserva cancelada"}
 
 
-# ✏️ MODIFICAR RESERVA
+# MODIFICAR RESERVA
 @router.put("/{id}")
 def modificar_reserva(id: str, reservation: ReservationCreate, user=Depends(get_current_user)):
 
@@ -120,7 +120,7 @@ def modificar_reserva(id: str, reservation: ReservationCreate, user=Depends(get_
     return {"message": "Reserva actualizada"}
 
 
-# 🏨 CHECK-IN
+# CHECK-IN
 @router.put("/checkin/{room_number}")
 def checkin(room_number: int, user=Depends(get_current_user)):
 
@@ -132,10 +132,13 @@ def checkin(room_number: int, user=Depends(get_current_user)):
         {"$set": {"status": "ocupada"}}
     )
 
-    return {"message": "Check-in realizado"}
+    return {
+        "message": "Check-in realizado",
+        "habitacion": room_number,
+        "hora": datetime.now()
+    }
 
-
-# 🚪 CHECK-OUT
+# CHECK-OUT
 @router.put("/checkout/{room_number}")
 def checkout(room_number: int, user=Depends(get_current_user)):
 
@@ -147,4 +150,39 @@ def checkout(room_number: int, user=Depends(get_current_user)):
         {"$set": {"status": "disponible"}}
     )
 
-    return {"message": "Check-out realizado"}
+    return {
+        "message": "Check-out realizado",
+        "habitacion": room_number,
+        "hora": datetime.now()
+    }
+
+@router.get("/recepcionista/reservas-hoy")
+def reservas_hoy(user=Depends(get_current_user)):
+
+    if user["role"] != "recepcionista":
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    today = datetime.now().date()
+
+    reservas = list(reservations_collection.find({
+        "check_in": {"$lte": datetime.combine(today, datetime.max.time())},
+        "check_out": {"$gte": datetime.combine(today, datetime.min.time())}
+    }))
+
+    for r in reservas:
+        r["_id"] = str(r["_id"])
+
+    return reservas
+
+@router.get("/recepcionista/historial")
+def historial_reservas(user=Depends(get_current_user)):
+
+    if user["role"] != "recepcionista":
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    reservas = list(reservations_collection.find())
+
+    for r in reservas:
+        r["_id"] = str(r["_id"])
+
+    return reservas

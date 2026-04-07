@@ -96,3 +96,15 @@ def buscar_habitaciones(type: str = None):
         room["_id"] = str(room["_id"])
 
     return rooms
+
+@router.get("/{number}")
+def obtener_habitacion(number: int):
+
+    room = rooms_collection.find_one({"number": number})
+
+    if not room:
+        raise HTTPException(status_code=404, detail="Habitación no encontrada")
+
+    room["_id"] = str(room["_id"])
+
+    return room

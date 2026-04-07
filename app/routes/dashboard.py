@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth.jwt_handler import get_current_user
 from app.database import users_collection, rooms_collection, reservations_collection
+from collections import Counter
 
 router = APIRouter()
 
@@ -82,4 +83,36 @@ def admin_dashboard(user=Depends(get_current_user)):
         "reservas_totales": total_reservations,
         "ingresos_totales": total_ingresos,
         "ocupacion_porcentaje": round(ocupacion, 2)
+    }
+
+@router.get("/admin/users", tags=["Admin"])
+def listar_usuarios(user=Depends(get_current_user)):
+
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    users = list(users_collection.find({}, {"password": 0}))
+
+    for u in users:
+        u["_id"] = str(u["_id"])
+
+    return users
+
+@router.get("/admin/top-rooms", tags=["Admin"])
+def habitaciones_mas_usadas(user=Depends(get_current_user)):
+
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    counter = Counter()
+
+    reservas = reservations_collection.find()
+
+    for r in reservas:
+        counter[r["room_number"]] += 1
+
+    top_rooms = counter.most_common(5)
+
+    return {
+        "top_habitaciones": top_rooms
     }
