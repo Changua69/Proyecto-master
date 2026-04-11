@@ -24,12 +24,13 @@ def register(user: UserRegister):
         "name": user.name,
         "email": user.email,
         "password": hashed_password,
-        "role": "huesped"  
+        "phone": user.phone,
+        "role": "huesped"
     }
 
     users_collection.insert_one(user_dict)
 
-    return {"message": "Usuario registrado correctamente"}
+    return {"message": f"Bienvenido {user.name} al Marea Dorada Resort"}
 
 
 @router.post("/login")

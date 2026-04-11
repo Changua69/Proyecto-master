@@ -5,7 +5,7 @@ class UserRegister(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role: str
+    phone: str
 
 
 class UserLogin(BaseModel):

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import type { CSSProperties } from "react"
 import { useNavigate } from "react-router-dom"
 import API from "../services/api"
+import logo from "../assets/image.ico"
 
 function Dashboard() {
   const [user, setUser] = useState<any>(null)
@@ -27,12 +28,7 @@ function Dashboard() {
       {/* NAVBAR */}
       <nav style={navbar}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={logoBox}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
-          </div>
+            <img src={logo} style={logoImg} alt="Logo" />
           <div>
             <p style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "#111" }}>Marea Dorada Resort</p>
             <p style={{ margin: 0, fontSize: "11px", color: "#888" }}>Portal del Huésped</p>
@@ -110,7 +106,7 @@ function Dashboard() {
         </h2>
         <div style={roomGrid}>
           {Array.isArray(rooms) && rooms.map((room) => (
-            <div key={room.number} style={roomCard} onClick={() => navigate(`/room/${room.number}`)}>
+            <div key={room.number} style={roomCard} onClick={() => navigate(`/rooms/${room.number}`)}>
               <div style={imgWrapper}>
                 <img
                   src={room.images?.[0] || room.image || "https://via.placeholder.com/400x200"}
@@ -150,7 +146,7 @@ function Dashboard() {
                 </p>
                 <button
                   style={reserveBtn}
-                  onClick={e => { e.stopPropagation(); navigate(`/room/${room.number}`) }}
+                  onClick={e => { e.stopPropagation(); navigate(`/rooms/${room.number}`) }}
                 >
                   Reservar Ahora
                 </button>
@@ -169,11 +165,6 @@ const navbar: CSSProperties = {
   padding: "0 2rem", display: "flex",
   justifyContent: "space-between", alignItems: "center",
   height: "56px", width: "100%", boxSizing: "border-box"
-}
-const logoBox: CSSProperties = {
-  width: "32px", height: "32px", background: "#2563eb",
-  borderRadius: "6px", display: "flex",
-  alignItems: "center", justifyContent: "center"
 }
 const logoutBtn: CSSProperties = {
   display: "flex", alignItems: "center", gap: "5px",
@@ -248,5 +239,10 @@ const reserveBtn: CSSProperties = {
   borderRadius: "8px", fontSize: "13px",
   fontWeight: 500, cursor: "pointer"
 }
-
+const logoImg: CSSProperties = {
+  width: "56px",
+  height: "56px",
+  borderRadius: "8px",  // o "50%" si quieres circular
+  objectFit: "cover"
+}
 export default Dashboard

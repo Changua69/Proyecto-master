@@ -1,29 +1,79 @@
 import { useState } from "react"
+import toast from "react-hot-toast"
 import type { CSSProperties } from "react"
 import { useNavigate } from "react-router-dom"
 import API from "../services/api"
+import logo from "../assets/image.ico"
 
 type Tab = "login" | "register"
 
 function Login() {
   const [tab, setTab] = useState<Tab>("login")
+
+  // LOGIN
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState("huesped")
+
+  // REGISTER
+  const [name, setName] = useState("")
+  const [regEmail, setRegEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [regPassword, setRegPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+
   const navigate = useNavigate()
 
+  // 🔹 LOGIN
   const handleLogin = async () => {
     try {
       const params = new URLSearchParams()
       params.append("username", email)
       params.append("password", password)
+
       const res = await API.post("/login", params, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" }
       })
-      localStorage.setItem("user", JSON.stringify({ ...res.data, role }))
+
+      // 🔥 guardamos datos correctos (sin variable role inexistente)
+      localStorage.setItem("user", JSON.stringify({
+        email,
+        role: res.data.role,
+        token: res.data.access_token
+      }))
+
       navigate("/dashboard")
     } catch (error: any) {
       alert(error.response ? "Credenciales incorrectas" : "Error de conexión")
+    }
+  }
+
+  // 🔹 REGISTER
+  const handleRegister = async () => {
+    if (regPassword !== confirmPassword) {
+      alert("Las contraseñas no coinciden")
+      return
+    }
+
+    try {
+      await API.post("/register", {
+        name,
+        email: regEmail,
+        password: regPassword,
+        phone
+      })
+
+      // limpiar campos
+      setName("")
+      setRegEmail("")
+      setPhone("")
+      setRegPassword("")
+      setConfirmPassword("")
+
+      toast.success("Usuario creado correctamente")
+
+      setTab("login")
+    } catch (error: any) {
+      toast.error("Error al registrar")
     }
   }
 
@@ -31,12 +81,7 @@ function Login() {
     <div style={page}>
       <div style={card}>
         <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-          <div style={logoCircle}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
-          </div>
+          <img src={logo} style={logoImg} alt="Logo" />
           <h1 style={hotelTitle}>Marea Dorada Resort</h1>
           <p style={subtitleText}>Gestión Integral de Reservas · 24 Habitaciones</p>
         </div>
@@ -50,6 +95,7 @@ function Login() {
           </button>
         </div>
 
+        {/* LOGIN */}
         {tab === "login" && (
           <div>
             <Field label="Correo Electrónico">
@@ -61,6 +107,7 @@ function Login() {
                   value={email} onChange={e => setEmail(e.target.value)} />
               </div>
             </Field>
+
             <Field label="Contraseña">
               <div style={inputWrapper}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2">
@@ -70,36 +117,48 @@ function Login() {
                   value={password} onChange={e => setPassword(e.target.value)} />
               </div>
             </Field>
-            <Field label={<>Rol <span style={{ fontWeight: 400, color: "#888" }}>(Seleccionar para Demo)</span></>}>
-              <select style={selectStyle} value={role} onChange={e => setRole(e.target.value)}>
-                <option value="huesped">Huésped</option>
-                <option value="recepcionista">Recepcionista</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </Field>
+
             <button style={primaryBtn} onClick={handleLogin}>Ingresar</button>
             <p style={forgotLink}>¿Olvidaste tu contraseña?</p>
           </div>
         )}
 
+        {/* REGISTER */}
         {tab === "register" && (
           <div>
             <Field label="Nombre Completo">
-              <input type="text" placeholder="Juan Pérez" style={inputBlock} />
+              <input type="text" style={inputBlock}
+                placeholder="Juan Perez"
+                value={name} onChange={e => setName(e.target.value)} />
             </Field>
+
             <Field label="Correo Electrónico">
-              <input type="email" placeholder="usuario@ejemplo.com" style={inputBlock} />
+              <input type="email" style={inputBlock}
+                placeholder="usuario@gmail.com"
+                value={regEmail} onChange={e => setRegEmail(e.target.value)} />
             </Field>
+
             <Field label="Teléfono">
-              <input type="tel" placeholder="+52 123 456 7890" style={inputBlock} />
+              <input type="tel" style={inputBlock}
+                placeholder="3185257788"
+                value={phone} onChange={e => setPhone(e.target.value)} />
             </Field>
+
             <Field label="Contraseña">
-              <input type="password" placeholder="••••••••" style={inputBlock} />
+              <input type="password" style={inputBlock}
+                placeholder="••••••••"
+                value={regPassword} onChange={e => setRegPassword(e.target.value)} />
             </Field>
+
             <Field label="Confirmar Contraseña">
-              <input type="password" placeholder="••••••••" style={inputBlock} />
+              <input type="password" style={inputBlock}
+                placeholder="••••••••"
+                value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </Field>
-            <button style={primaryBtn}>Crear Cuenta</button>
+
+            <button style={primaryBtn} onClick={handleRegister}>
+              Crear Cuenta
+            </button>
           </div>
         )}
       </div>
@@ -126,11 +185,6 @@ const card: CSSProperties = {
   background: "white", borderRadius: "12px",
   border: "1px solid #eee", padding: "2rem",
   width: "100%", maxWidth: "420px"
-}
-const logoCircle: CSSProperties = {
-  width: "56px", height: "56px", borderRadius: "50%",
-  background: "#2563eb", display: "flex",
-  alignItems: "center", justifyContent: "center", margin: "0 auto 1rem"
 }
 const hotelTitle: CSSProperties = { margin: 0, fontSize: "22px", fontWeight: 600, color: "#111" }
 const subtitleText: CSSProperties = { margin: "4px 0 0", fontSize: "13px", color: "#888" }
@@ -164,11 +218,6 @@ const inputBlock: CSSProperties = {
   background: "#fafafa", fontSize: "14px",
   color: "#111", boxSizing: "border-box" as const
 }
-const selectStyle: CSSProperties = {
-  width: "100%", padding: "10px 12px",
-  border: "1px solid #e0e0e0", borderRadius: "8px",
-  background: "#fafafa", fontSize: "14px", color: "#111"
-}
 const primaryBtn: CSSProperties = {
   width: "100%", padding: "12px",
   background: "#111", color: "white", border: "none",
@@ -178,6 +227,13 @@ const primaryBtn: CSSProperties = {
 const forgotLink: CSSProperties = {
   textAlign: "center", fontSize: "13px",
   color: "#2563eb", cursor: "pointer", margin: 0
+}
+const logoImg: CSSProperties = {
+  width: "116px",
+  height: "116px",  // 👈 quita esto si no quieres que sea circular
+  objectFit: "cover",
+  margin: "0 auto 1rem",
+  display: "block"
 }
 
 export default Login

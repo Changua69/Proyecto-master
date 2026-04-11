@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import type { CSSProperties } from "react"
 import { useParams, useNavigate } from "react-router-dom"
+import logo from "../assets/image.ico"
+import toast from "react-hot-toast"
 import API from "../services/api"
 
 function RoomDetail() {
@@ -8,12 +10,53 @@ function RoomDetail() {
   const navigate = useNavigate()
   const [room, setRoom] = useState<any>(null)
 
+  // 🔥 NUEVOS ESTADOS (NO TOCAN DISEÑO)
+  const [checkIn, setCheckIn] = useState("")
+  const [checkOut, setCheckOut] = useState("")
+
   useEffect(() => {
     API.get("/rooms").then(res => {
       const found = res.data.find((r: any) => r.number == number)
       setRoom(found)
     }).catch(console.error)
   }, [number])
+
+  // 🔥 FUNCIÓN RESERVAR
+  const handleReserve = async () => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}")
+
+    if (!checkIn || !checkOut) {
+      toast.error("Selecciona las fechas")
+      return
+    }
+
+    if (checkOut <= checkIn) {
+      toast.error("Fechas inválidas")
+      return
+    }
+
+    try {
+      const res = await API.post(
+        "/reservations/create",
+        {
+          room_number: room.number,
+          guest_email: user.email,
+          check_in: checkIn,
+          check_out: checkOut
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`
+          }
+        }
+      )
+
+      toast.success(res.data.message)
+
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || "Error al reservar")
+    }
+  }
 
   if (!room) return <div style={{ padding: "2rem", color: "#888" }}>Cargando...</div>
 
@@ -23,12 +66,7 @@ function RoomDetail() {
       {/* NAVBAR */}
       <nav style={navbar}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={logoBox}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
-          </div>
+          <img src={logo} style={logoImg} alt="Logo" />
           <div>
             <p style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "#111" }}>Marea Dorada Resort</p>
             <p style={{ margin: 0, fontSize: "11px", color: "#888" }}>Portal del Huésped</p>
@@ -106,12 +144,24 @@ function RoomDetail() {
 
               <div style={{ marginBottom: "1rem" }}>
                 <label style={fieldLabel}>Check-in</label>
-                <input type="date" style={fieldInput} />
+                <input
+                  type="date"
+                  style={fieldInput}
+                  value={checkIn}
+                  onChange={e => setCheckIn(e.target.value)}
+                />
               </div>
+
               <div style={{ marginBottom: "1rem" }}>
                 <label style={fieldLabel}>Check-out</label>
-                <input type="date" style={fieldInput} />
+                <input
+                  type="date"
+                  style={fieldInput}
+                  value={checkOut}
+                  onChange={e => setCheckOut(e.target.value)}
+                />
               </div>
+
               <div style={{ marginBottom: "1.5rem" }}>
                 <label style={fieldLabel}>Huéspedes</label>
                 <select style={fieldInput}>
@@ -121,11 +171,15 @@ function RoomDetail() {
                 </select>
               </div>
 
-              <button style={reserveBtn}>Reservar Ahora</button>
+              <button style={reserveBtn} onClick={handleReserve}>
+                Reservar Ahora
+              </button>
+
               <p style={{ textAlign: "center", fontSize: "12px", color: "#aaa", marginTop: "12px" }}>
                 Sin cargos adicionales al reservar
               </p>
             </div>
+
           </div>
         </div>
       </div>
@@ -133,6 +187,7 @@ function RoomDetail() {
   )
 }
 
+/* 🔥 TODO TU DISEÑO SE MANTIENE IGUAL */
 const page: CSSProperties = { background: "#f5f5f5", minHeight: "100vh", width: "100%" }
 const navbar: CSSProperties = {
   background: "white", borderBottom: "1px solid #eee",
@@ -204,6 +259,13 @@ const reserveBtn: CSSProperties = {
   background: "#111", color: "white", border: "none",
   borderRadius: "8px", fontSize: "14px",
   fontWeight: 500, cursor: "pointer"
+}
+const logoImg: CSSProperties = {
+  width: "66px",
+  height: "66px",  // 👈 quita esto si no quieres que sea circular
+  objectFit: "cover",
+  margin: "0 auto 1rem",
+  display: "block"
 }
 
 export default RoomDetail
